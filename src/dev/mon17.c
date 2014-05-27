@@ -65,13 +65,10 @@ static bool mon17_find(const ipdb *ctx, ipdb_item *item, uint32_t ip)
     return mon17_iter(ctx, item, offset);
 }
 
-ipdb* mon17_create(const uint8_t *buffer, uint32_t length)
+static bool mon17_init(ipdb* ctx, const uint8_t *buffer, uint32_t length)
 {
-    ipdb* ctx = ipdb_create();
     ctx->buffer = buffer;
     ctx->length = length;
-    ctx->iter = mon17_iter;
-    ctx->find = mon17_find;
 
     if(length>=4 && sizeof(mon17_item)==8)
     {
@@ -88,5 +85,7 @@ ipdb* mon17_create(const uint8_t *buffer, uint32_t length)
         }
         ctx->date = year*10000 + month*100 + day;
     }
-    return ctx;
+    return ctx->count!=0;
 }
+
+const ipdb_handle mon17_handle = {mon17_init, mon17_iter, mon17_find};

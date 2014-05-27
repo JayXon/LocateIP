@@ -64,13 +64,10 @@ static bool qqwry_find(const ipdb *ctx, ipdb_item *item, uint32_t ip)
     return qqwry_iter(ctx, item, low);
 }
 
-ipdb* qqwry_create(const uint8_t *buffer, uint32_t length)
+static bool qqwry_init(ipdb * ctx, const uint8_t *buffer, uint32_t length)
 {
-    ipdb* ctx = ipdb_create();
     ctx->buffer = buffer;
     ctx->length = length;
-    ctx->iter = qqwry_iter;
-    ctx->find = qqwry_find;
 
     if(length>=8)
     {
@@ -100,5 +97,7 @@ ipdb* qqwry_create(const uint8_t *buffer, uint32_t length)
             ctx->count = 0;
         }
     }
-    return ctx;
+    return ctx->count!=0;
 }
+
+const ipdb_handle qqwry_handle = {qqwry_init, qqwry_iter, qqwry_find};

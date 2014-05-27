@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include "cz_update.h"
-#include "cz_update.c"
 #include "ipdb.c"
 #include "qqwry.c"
 #include "mon17.c"
@@ -42,13 +40,13 @@ int main()
 {
     uint32_t length = 0;
     uint8_t *buffer = readfile("17monipdb.dat", &length);
-    ipdb *ipdb = mon17_create(buffer, length);
-    printf("%d %d\n", ipdb->count, ipdb->date);
+    ipdb *db = ipdb_create(&mon17_handle, buffer, length);
+    printf("%d %d\n", db->count, db->date);
 
-    ipdb_dump(ipdb, "1.txt");
+    ipdb_dump(db, "1.txt");
 
     ipdb_item item;
-    ipdb_find(ipdb, &item, "112.121.182.84");
+    ipdb_find(db, &item, "112.121.182.84");
 
     char ip1[16];
     char ip2[16];
@@ -58,7 +56,7 @@ int main()
     printf("%-16s%-16s%s%s%s\r\n", ip1_t, ip2_t, item.zone, strlen(item.area)>0?" ":"", item.area);
 
     free(buffer);
-    ipdb_release(ipdb);
+    ipdb_release(db);
     //getchar();
     return 0;
 }

@@ -45,9 +45,12 @@ static uint32_t str2ip(const char *lp)
     return ret;
 }
 
-ipdb* ipdb_create()
+ipdb* ipdb_create(const ipdb_handle *handle, const uint8_t *buffer, uint32_t length)
 {
-    return calloc(1, sizeof(ipdb));
+    ipdb* ctx = calloc(1, sizeof(ipdb));
+    ctx->handle = handle;
+    ctx->handle->init(ctx, buffer, length);
+    return ctx;
 }
 
 void ipdb_release(ipdb *ctx)
@@ -83,10 +86,10 @@ bool ipdb_dump(const ipdb *ctx, const char *file)
 
 bool ipdb_find(const ipdb *ctx, ipdb_item *item, const char *ip)
 {
-    return ctx->find(ctx, item, str2ip(ip));
+    return ctx->handle->find(ctx, item, str2ip(ip));
 }
 
 bool ipdb_next(ipdb_iter *iter, ipdb_item *item)
 {
-    return iter->ctx->iter(iter->ctx, item, iter->index++);
+    return iter->ctx->handle->iter(iter->ctx, item, iter->index++);
 }
