@@ -1,4 +1,4 @@
-#include "loci.h"
+#include "ipdb.h"
 
 // http://tool.17mon.cn/ipdb.html
 
@@ -23,7 +23,7 @@ typedef struct
     uint32_t length:8;
 } mon17_item;
 
-static bool mon17_iter(const loci *ctx, loci_item *item, uint32_t index)
+static bool mon17_iter(const ipdb *ctx, ipdb_item *item, uint32_t index)
 {
     static char buf[256];
     if(index<ctx->count)
@@ -48,7 +48,7 @@ static bool mon17_iter(const loci *ctx, loci_item *item, uint32_t index)
     return false;
 }
 
-static bool mon17_find(const loci *ctx, loci_item *item, uint32_t ip)
+static bool mon17_find(const ipdb *ctx, ipdb_item *item, uint32_t ip)
 {
     uint32_t *index = (uint32_t*)(ctx->buffer + 4);
     uint32_t offset = index[ip>>24];
@@ -65,9 +65,9 @@ static bool mon17_find(const loci *ctx, loci_item *item, uint32_t ip)
     return mon17_iter(ctx, item, offset);
 }
 
-loci* mon17_create(const uint8_t *buffer, uint32_t length)
+ipdb* mon17_create(const uint8_t *buffer, uint32_t length)
 {
-    loci* ctx = loci_create();
+    ipdb* ctx = ipdb_create();
     ctx->buffer = buffer;
     ctx->length = length;
     ctx->iter = mon17_iter;
@@ -79,7 +79,7 @@ loci* mon17_create(const uint8_t *buffer, uint32_t length)
         uint32_t index_length = swap32(*pos);
         ctx->count = (index_length - 4 - 256*4 - 1024)/8;
 
-        loci_item item;
+        ipdb_item item;
         mon17_iter(ctx, &item, ctx->count-1);
         uint32_t year = 0, month = 0, day = 0;
         if( sscanf(item.area, "%4d%2d%2d", &year, &month, &day)!=3 ) // 17monÊý¾Ý¿â

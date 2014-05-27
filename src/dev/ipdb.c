@@ -1,4 +1,4 @@
-#include "loci.h"
+#include "ipdb.h"
 
 static char* ip2str(char *buf, size_t len, int ip)
 {
@@ -45,26 +45,26 @@ static uint32_t str2ip(const char *lp)
     return ret;
 }
 
-loci* loci_create()
+ipdb* ipdb_create()
 {
-    return calloc(1, sizeof(loci));
+    return calloc(1, sizeof(ipdb));
 }
 
-void loci_release(loci *ctx)
+void ipdb_release(ipdb *ctx)
 {
     free(ctx);
 }
 
-bool loci_dump(const loci *ctx, const char *file)
+bool ipdb_dump(const ipdb *ctx, const char *file)
 {
     FILE *fp = fopen(file, "wb");
     if(fp)
     {
-        loci_iter iter;
+        ipdb_iter iter;
         iter.ctx = ctx;
         iter.index = 0;
-        loci_item item;
-        while(loci_next(&iter, &item))
+        ipdb_item item;
+        while(ipdb_next(&iter, &item))
         {
             char ip1[16];
             char ip2[16];
@@ -81,12 +81,12 @@ bool loci_dump(const loci *ctx, const char *file)
     return false;
 }
 
-bool loci_find(const loci *ctx, loci_item *item, const char *ip)
+bool ipdb_find(const ipdb *ctx, ipdb_item *item, const char *ip)
 {
     return ctx->find(ctx, item, str2ip(ip));
 }
 
-bool loci_next(loci_iter *iter, loci_item *item)
+bool ipdb_next(ipdb_iter *iter, ipdb_item *item)
 {
     return iter->ctx->iter(iter->ctx, item, iter->index++);
 }

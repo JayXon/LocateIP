@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "loci.h"
+#include "ipdb.h"
 
 // 本文件提供对纯真IP数据库自动更新的解析以及制作增量更新
 

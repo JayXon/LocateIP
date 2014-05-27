@@ -1,4 +1,4 @@
-#include "loci.h"
+#include "ipdb.h"
 
 // http://www.cz88.net/
 
@@ -7,7 +7,7 @@ inline static uint32_t get_3b(const char *mem)
     return 0x00ffffff & *(uint32_t*)(mem);
 }
 
-static bool qqwry_iter(const loci *ctx, loci_item *item, uint32_t index)
+static bool qqwry_iter(const ipdb *ctx, ipdb_item *item, uint32_t index)
 {
     if(index<ctx->count)
     {
@@ -44,7 +44,7 @@ static bool qqwry_iter(const loci *ctx, loci_item *item, uint32_t index)
     return false;
 }
 
-static bool qqwry_find(const loci *ctx, loci_item *item, uint32_t ip)
+static bool qqwry_find(const ipdb *ctx, ipdb_item *item, uint32_t ip)
 {
     char *ptr = (char*)ctx->buffer;
     char *p = ptr + *(uint32_t*)ptr;
@@ -64,9 +64,9 @@ static bool qqwry_find(const loci *ctx, loci_item *item, uint32_t ip)
     return qqwry_iter(ctx, item, low);
 }
 
-loci* qqwry_create(const uint8_t *buffer, uint32_t length)
+ipdb* qqwry_create(const uint8_t *buffer, uint32_t length)
 {
-    loci* ctx = loci_create();
+    ipdb* ctx = ipdb_create();
     ctx->buffer = buffer;
     ctx->length = length;
     ctx->iter = qqwry_iter;
@@ -83,7 +83,7 @@ loci* qqwry_create(const uint8_t *buffer, uint32_t length)
             ctx->count /= 7;
             ctx->count++;
 
-            loci_item item;
+            ipdb_item item;
             qqwry_iter(ctx, &item, ctx->count-1);
             uint32_t year = 0, month = 0, day = 0;
             if( sscanf(item.area, "%d年%d月%d日", &year, &month, &day)!=3 ) // 纯真IP数据库

@@ -18,27 +18,27 @@ typedef unsigned short uint16_t;
 typedef unsigned uint32_t;
 #endif
 
-typedef struct loci_t loci;
-typedef struct loci_iter_t loci_iter;
-typedef struct loci_item_t loci_item;
+typedef struct ipdb_t ipdb;
+typedef struct ipdb_iter_t ipdb_iter;
+typedef struct ipdb_item_t ipdb_item;
 
-struct loci_t
+struct ipdb_t
 {
 	const uint8_t*		buffer;
 	uint32_t            length;
 	uint32_t			count;
 	uint32_t			date;
-	bool                (*iter)(const loci *, loci_item *, uint32_t);
-	bool                (*find)(const loci *, loci_item *, uint32_t);
+	bool                (*iter)(const ipdb *, ipdb_item *, uint32_t);
+	bool                (*find)(const ipdb *, ipdb_item *, uint32_t);
 };
 
-struct loci_iter_t
+struct ipdb_iter_t
 {
-    const loci*         ctx;
+    const ipdb*         ctx;
     uint32_t            index;
 };
 
-struct loci_item_t
+struct ipdb_item_t
 {
 	const char*			zone;
 	const char*			area;
@@ -46,12 +46,12 @@ struct loci_item_t
 	uint32_t			upper;
 };
 
-loci* loci_create();
-void loci_release(loci *);
+ipdb* ipdb_create();
+void ipdb_release(ipdb *);
 
-bool loci_dump(const loci *, const char *);
-bool loci_find(const loci *, loci_item *, const char *);
-bool loci_next(loci_iter *, loci_item *);
+bool ipdb_dump(const ipdb *, const char *);
+bool ipdb_find(const ipdb *, ipdb_item *, const char *);
+bool ipdb_next(ipdb_iter *, ipdb_item *);
 
 #ifdef __cplusplus
 }
