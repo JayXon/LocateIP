@@ -219,7 +219,7 @@ table *table_create()
     return t;
 }
 
-table_node* table_set_key(table *t, const char* name, uint32_t value)
+table_node* table_set_key(table *t, const char* name)
 {
     const table_key *key = make_table_key(name, strlen(name), t->seed);
     table_node *node =  table_find(t, key);
@@ -239,9 +239,16 @@ void table_release(table *t)
     free(t->head);
     free(t);
 }
+
 //
 bool qqwry_build(const ipdb *ctx, const char *file)
 {
+    typedef struct
+    {
+        uint32_t        offset;
+        table*          extend;
+    } table_value;
+
     buffer *record_buffer = buffer_create();
     buffer *index_buffer = buffer_create();
     table *string_table = table_create();
@@ -259,40 +266,86 @@ bool qqwry_build(const ipdb *ctx, const char *file)
         table_node *zone = table_get_key(string_table, item.zone);
         if(zone)
         {
-            if(!zone->value) zone->value = (uint32_t)table_create();
-            table_node *area = table_get_key((table*)zone->value, item.area);
+            table_value *zone_value = (table_value*)zone->value;
+            table_node *area = table_get_key(zone_value->extend, item.area);
             if(area)
             {
-                unsigned char redirect = 0x01;
+                table_value *area_value = (table_value*)area->value;
+                uint8_t redirect = 0x01;
                 buffer_append(record_buffer, &redirect, sizeof(redirect));
-                buffer_append(record_buffer, &area->value, 3);
+                buffer_append(record_buffer, &area_value->offset, 3);
             }
             else
             {
+                table_node *node = table_set_key(zone_value->extend, item.area);
+                table_value *node_value = calloc(1, sizeof(table_value));
+                node->value = (uint32_t)node_value;
+                node_value->offset = offset;
+                node_value->extend = table_create();
 
+                uint8_t redirect = 0x02;
+                buffer_append(record_buffer, &redirect, sizeof(redirect));
+                buffer_append(record_buffer, &zone_value->offset, 3);
+
+                area = table_get_key(string_table, item.area);
+                uint32_t area_len = strlen(item.area) + 1;
+                if(area_len>4 && area )
+                {
+                    table_value *area_value = (table_value*)area->value;
+                    buffer_append(record_buffer, &redirect, sizeof(redirect));
+                    buffer_append(record_buffer, &area_value->offset, 3);
+                }
+                else
+                {
+                    area = table_set_key(string_table, item.area);
+                    table_value *area_value = calloc(1, sizeof(table_value));
+                    area->value = (uint32_t)area_value;
+                    area_value->offset = offset + 4;
+                    area_value->extend = table_create();
+
+                    buffer_append(record_buffer, item.area, area_len);
+                }
             }
         }
         else
         {
             zone = table_set_key(string_table, item.zone);
-            zone->value = (uint32_t)table_create();
+            table_value *zone_value = calloc(1, sizeof(table_value));
+            zone->value = (uint32_t)zone_value;
 
-            table_node *area = table_set_key((table*)zone->value, item.area);
-            area->value = offset;
+            zone_value->offset = offset;
+            zone_value->extend = table_create();
 
-            if(stelen(item.zone)>3)
+            uint32_t zone_len = strlen(item.zone) + 1;
+            buffer_append(record_buffer, item.zone, zone_len);
+
+            table_node *node = table_set_key(zone_value->extend, item.area);
+            table_value *node_value = calloc(1, sizeof(table_value));
+            node->value = (uint32_t)node_value;
+            node_value->offset = offset;
+            node_value->extend = table_create();
+
+            table_node *area = table_get_key(string_table, item.area);
+
+            uint32_t area_len = strlen(item.area) + 1;
+            if(area_len>4 && area)
             {
-                unsigned char redirect = 0x02;
+                table_value *area_value = (table_value*)area->value;
+
+                uint8_t redirect = 0x02;
                 buffer_append(record_buffer, &redirect, sizeof(redirect));
-                buffer_append(record_buffer, &strings.find(item->address)->second.offset, 3);
+                buffer_append(record_buffer, &area_value->offset, 3);
             }
             else
             {
+                area = table_set_key(string_table, item.area);
+                table_value *area_value = calloc(1, sizeof(table_value));
+                area->value = (uint32_t)area_value;
+                area_value->offset = offset + zone_len;
+                area_value->extend = table_create();
 
+                buffer_append(record_buffer, item.area, area_len);
             }
-
-            uint32_t len = strlen(item.zone) + 1;
-            buffer_append(record_buffer, item.zone, len);
         }
 
         offset -= 4;
