@@ -3,7 +3,7 @@
 
 ipdb* ipdb_create(const ipdb_handle *handle, const uint8_t *buffer, uint32_t length)
 {
-    ipdb* ctx = calloc(1, sizeof(ipdb));
+    ipdb *ctx = calloc(1, sizeof(ipdb));
     ctx->handle = handle;
     ctx->handle->init(ctx, buffer, length);
     return ctx;
@@ -19,9 +19,7 @@ bool ipdb_dump(const ipdb *ctx, const char *file)
     FILE *fp = fopen(file, "wb");
     if(fp)
     {
-        ipdb_iter iter;
-        iter.ctx = ctx;
-        iter.index = 0;
+        ipdb_iter iter = {ctx, 0};
         ipdb_item item;
         while(ipdb_next(&iter, &item))
         {

@@ -3,6 +3,7 @@
 #include "util.c"
 #include "qqwry.c"
 #include "mon17.c"
+#include "qqwry_build.c"
 
 //#include <windows.h>
 uint8_t* readfile(const char *path, uint32_t *length)
@@ -82,7 +83,7 @@ void test_build_qqwry()
     uint8_t *buffer = readfile("qqwry.dat", &length);
     ipdb *db = ipdb_create(&qqwry_handle, buffer, length);
 
-
+    if(db->count) qqwry_build(db, "test.dat");
 
     if(buffer) free(buffer);
     ipdb_release(db);
@@ -91,6 +92,7 @@ int main()
 {
     test_read_qqwry();
     test_read_mon17();
+    //test_build_qqwry();
     //getchar();
     return 0;
 }
