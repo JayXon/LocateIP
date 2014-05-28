@@ -54,8 +54,8 @@ typedef struct table_node_t table_node;
 struct table_node_t
 {
     uint32_t        key;
-    table_node*     next;
     uint32_t        value;
+    table_node*     next;
 };
 
 typedef struct
@@ -91,7 +91,7 @@ const table_key* make_table_key(const char* str, size_t len, uint32_t seed)
     memcpy(key->str, str, len * sizeof(char));
     return key;
 }
-uint32_t get_len(const table_key* key)
+uint32_t get_name_len(const table_key* key)
 {
     return key->hash >> 22;
 }
@@ -100,14 +100,14 @@ const table_node* make_node(table *t, const table_key* key)
     static table_node node;
     node.key = buffer_size(t->str);
     buffer_append(t->str, key, sizeof(table_key));
-    buffer_append(t->str, key->str, get_len(key));
+    buffer_append(t->str, key->str, get_name_len(key));
     node.next = 0;
     node.value = 0;
     return &node;
 }
-uint32_t get_position(table *t, const table_key* key)
+table_node* node_position(table *t, const table_key* key)
 {
-    return key->hash & (t->size - 1);
+    return t->head + (key->hash & (t->size - 1));
 }
 bool is_empty_node(const table_node* node)
 {
@@ -115,7 +115,7 @@ bool is_empty_node(const table_node* node)
 }
 bool is_same_key(const table_key* key, const table_key* cmpkey)
 {
-    return key->hash == cmpkey->hash && memcmp(key->str, cmpkey->str, get_len(cmpkey)) == 0;
+    return key->hash == cmpkey->hash && memcmp(key->str, cmpkey->str, get_name_len(cmpkey)) == 0;
 }
 const table_key* get_key(table *t, const table_node* node)
 {
@@ -162,7 +162,7 @@ void resize(table *t, uint32_t newsize)
 }
 table_node* table_find(table *t, const table_key* key)
 {
-    table_node* node = t->head + get_position(t, key);
+    table_node* node = node_position(t, key);
     while (!is_empty_node(node))
     {
         if (is_same_key(get_key(t, node), key)) return node;
@@ -173,8 +173,7 @@ table_node* table_find(table *t, const table_key* key)
 }
 table_node* table_insert(table *t, const table_node* data)
 {
-    uint32_t position = get_position(t, get_key(t, data));
-    table_node* node = t->head + position;
+    table_node* node = node_position(t, get_key(t, data));
     if (!is_empty_node(node))
     {
         if (!is_same_key(get_key(t, node), get_key(t, data)))
@@ -187,7 +186,7 @@ table_node* table_insert(table *t, const table_node* data)
             }
             else
             {
-                table_node* other = t->head + get_position(t, get_key(t, node));
+                table_node* other = node_position(t, get_key(t, node));
                 if (other != node)
                 {
                     while (get_next(other) != node) other = get_next(other);
@@ -250,7 +249,7 @@ void show_table_key(table *t)
         if (!is_empty_node(node))
         {
             const table_key* key = get_key(t, node);
-            printf("%.*s\n", get_len(key), key->str);
+            printf("%.*s\n", get_name_len(key), key->str);
         }
     }
 }
