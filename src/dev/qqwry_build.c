@@ -86,7 +86,7 @@ uint32_t calc_hash(const char* str, size_t len, uint32_t seed)
 const table_key* make_table_key(const char* str, size_t len, uint32_t seed)
 {
     static char buffer[1 << 10];
-    table_key* key = (table_key*)buffer;
+    table_key *key = (table_key*)buffer;
     key->hash = (len << 22) | calc_hash(str, len, seed);
     memcpy(key->str, str, len * sizeof(char));
     return key;
@@ -119,7 +119,7 @@ bool is_same_key(const table_key* key, const table_key* cmpkey)
 }
 const table_key* get_key(table *t, const table_node* node)
 {
-    uint8_t* buf = buffer_get(t->str);
+    uint8_t *buf = buffer_get(t->str);
     return (const table_key*)&buf[node->key];
 }
 table_node* get_next(const table_node* node)
@@ -143,13 +143,13 @@ void resize(table *t, uint32_t newsize)
 {
     uint32_t i = 0;
     uint32_t oldsize = t->size;
-    table_node* oldhead = t->head;
+    table_node *oldhead = t->head;
     t->size = newsize;
     t->head = (table_node*)calloc(t->size, sizeof(table_node));
     t->idle = t->head + t->size;
     for (; i < oldsize; i++)
     {
-        table_node* node = oldhead + i;
+        table_node *node = oldhead + i;
         if (!is_empty_node(node))
         {
             node->next = 0;
@@ -162,7 +162,7 @@ void resize(table *t, uint32_t newsize)
 }
 table_node* table_find(table *t, const table_key* key)
 {
-    table_node* node = node_position(t, key);
+    table_node *node = node_position(t, key);
     while (!is_empty_node(node))
     {
         if (is_same_key(get_key(t, node), key)) return node;
@@ -173,12 +173,12 @@ table_node* table_find(table *t, const table_key* key)
 }
 table_node* table_insert(table *t, const table_node* data)
 {
-    table_node* node = node_position(t, get_key(t, data));
+    table_node *node = node_position(t, get_key(t, data));
     if (!is_empty_node(node))
     {
         if (!is_same_key(get_key(t, node), get_key(t, data)))
         {
-            table_node* next = get_idle_node(t);
+            table_node *next = get_idle_node(t);
             if (next == NULL)
             {
                 resize(t, t->size << 1);
@@ -186,7 +186,7 @@ table_node* table_insert(table *t, const table_node* data)
             }
             else
             {
-                table_node* other = node_position(t, get_key(t, node));
+                table_node *other = node_position(t, get_key(t, node));
                 if (other != node)
                 {
                     while (get_next(other) != node) other = get_next(other);
@@ -352,7 +352,7 @@ bool qqwry_build(const ipdb *ctx, const char *file)
             buffer_append(record_buffer, item.zone, zone_len);
 
             table_node *node = table_set_key(zone_value->extend, item.area);
-            table_value *node_value = make_table_value(node, offset);
+            make_table_value(node, offset);
 
             table_node *area = table_get_key(string_table, item.area);
 
