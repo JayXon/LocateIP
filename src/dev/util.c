@@ -1,16 +1,17 @@
 #include "ipdb.h"
+#include "util.h"
 
 char* ip2str(char *buf, size_t len, int ip)
 {
+    int i=0;
     buf[--len] = 0;
 
-    int i=0;
     for(i=0;i<4;i++)
     {
         int dec = ip & 0xFF;
         do
         {
-            buf[--len] = dec%10 + '0';
+            buf[--len] = (char)(dec%10 + '0');
             dec/=10;
         }while(dec!=0);
 
@@ -35,7 +36,7 @@ uint32_t str2ip(const char *lp)
         }
         else
         {
-            now = 10 * now + *lp - '0';
+            now = (unsigned char)(10 * now + *lp - '0');
         }
 
         ++lp;

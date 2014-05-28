@@ -7,8 +7,15 @@ extern "C" {
 
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #include <stdlib.h>
+
+#ifdef __GNUC__
+    #include <stdbool.h>
+#else
+    #define bool int
+    #define true 1
+    #define false 0
+#endif // __GNUC__
 
 #ifndef uint32_t
 typedef unsigned char uint8_t;

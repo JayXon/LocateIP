@@ -2,7 +2,7 @@
 
 // http://www.cz88.net/
 
-inline static uint32_t get_3b(const char *mem)
+static uint32_t get_3b(const char *mem)
 {
     return 0x00ffffff & *(uint32_t*)(mem);
 }
@@ -13,13 +13,14 @@ static bool qqwry_iter(const ipdb *ctx, ipdb_item *item, uint32_t index)
     {
         char *ptr = (char*)ctx->buffer;
         char *p = ptr + *(uint32_t*)ptr;
+        char *offset;
 
         uint32_t temp = get_3b(p + 7 * index + 4);
 
         item->lower = *(uint32_t*)(p + 7 * index);
         item->upper = *(uint32_t*)(ptr + temp);
 
-        char *offset = ptr + temp + 4;
+        offset = ptr + temp + 4;
 
         if( 0x01 == *offset )
             offset = ptr + get_3b(offset + 1);
@@ -66,6 +67,9 @@ static bool qqwry_find(const ipdb *ctx, ipdb_item *item, uint32_t ip)
 
 static bool qqwry_init(ipdb * ctx, const uint8_t *buffer, uint32_t length)
 {
+    ipdb_item item;
+    uint32_t year = 0, month = 0, day = 0;
+
     ctx->buffer = buffer;
     ctx->length = length;
 
@@ -80,9 +84,7 @@ static bool qqwry_init(ipdb * ctx, const uint8_t *buffer, uint32_t length)
             ctx->count /= 7;
             ctx->count++;
 
-            ipdb_item item;
             qqwry_iter(ctx, &item, ctx->count-1);
-            uint32_t year = 0, month = 0, day = 0;
             if( sscanf(item.area, "%d年%d月%d日", &year, &month, &day)!=3 ) // 纯真IP数据库
             {
                 if( sscanf(item.area, "%4d%2d%2d", &year, &month, &day)!=3 ) // 珊瑚虫IP数据库

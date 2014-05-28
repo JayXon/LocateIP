@@ -5,14 +5,14 @@
 // 查询更新 http://api.17mon.cn/api.php?a=ipdb
 // 返回字符串 112.121.182.84|20140501|http://s.qdcdn.com/17mon/17monipdb.dat
 
-inline static uint32_t swap32(uint32_t n)
+static uint32_t swap32(uint32_t n)
 {
     #ifdef __GNUC__
         return __builtin_bswap32(n);
-    #elif defined _MSC_VER
+    #elif defined _MSC_VER >= 1300
         return _byteswap_ulong(n);
     #else
-        //
+        return ((n<<24)|((n<<8)&0x00FF0000)|((n>>8)&0x0000FF00)|(n>>24));
     #endif // __GNUC__
 }
 
@@ -25,6 +25,7 @@ typedef struct
 
 static bool mon17_iter(const ipdb *ctx, ipdb_item *item, uint32_t index)
 {
+    char *parting;
     static char buf[256];
     if(index<ctx->count)
     {
@@ -38,7 +39,7 @@ static bool mon17_iter(const ipdb *ctx, ipdb_item *item, uint32_t index)
         memcpy(buf, text, ptr[index].length);
         buf[ptr[index].length] = 0;
 
-        char *parting = strchr(buf, '\t');
+        parting = strchr(buf, '\t');
         *parting = 0;
 
         item->zone = buf;
@@ -67,6 +68,9 @@ static bool mon17_find(const ipdb *ctx, ipdb_item *item, uint32_t ip)
 
 static bool mon17_init(ipdb* ctx, const uint8_t *buffer, uint32_t length)
 {
+    ipdb_item item;
+    uint32_t year = 0, month = 0, day = 0;
+
     ctx->buffer = buffer;
     ctx->length = length;
 
@@ -76,9 +80,7 @@ static bool mon17_init(ipdb* ctx, const uint8_t *buffer, uint32_t length)
         uint32_t index_length = swap32(*pos);
         ctx->count = (index_length - 4 - 256*4 - 1024)/8;
 
-        ipdb_item item;
         mon17_iter(ctx, &item, ctx->count-1);
-        uint32_t year = 0, month = 0, day = 0;
         if( sscanf(item.area, "%4d%2d%2d", &year, &month, &day)!=3 ) // 17mon数据库
         {
             year = 1899, month = 12, day = 30; // 未知数据库

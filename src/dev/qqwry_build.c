@@ -93,6 +93,8 @@ void set_node(table_node* node, const table_node* data)
 {
     memcpy(node, data, sizeof(table_node));
 }
+
+table_node* table_insert(table *t, const table_node* data);
 void resize(table *t, uint32_t newsize)
 {
     uint32_t i = 0;
@@ -107,8 +109,6 @@ void resize(table *t, uint32_t newsize)
         if (!is_empty_node(node))
         {
             node->next = 0;
-
-            table_node* table_insert(table *t, const table_node* data);
             table_insert(t, node);
         }
     }
@@ -250,38 +250,55 @@ bool qqwry_build(const ipdb *ctx, const char *file)
     ipdb_iter iter = {ctx, 0};
     ipdb_item item;
 
+    table_node *zone;
+    table_node *node;
+    table_node *area;
+
+    uint8_t redirect;
+
+    uint32_t zone_len;
+    uint32_t area_len;
+
+    table_value *zone_value;
+    table_value *area_value;
+    
+    uint32_t idx_first;
+    uint32_t idx_last;
+
+    FILE *fp;
+
     while(ipdb_next(&iter, &item))
     {
         buffer_append(record_buffer, &item.upper, sizeof(item.upper));
 
         offset += 4;
 
-        table_node *zone = table_get_key(string_table, item.zone);
+        zone = table_get_key(string_table, item.zone);
         if(zone)
         {
-            table_value *zone_value = (table_value*)zone->value;
-            table_node *area = table_get_key(zone_value->extend, item.area);
+            zone_value = (table_value*)zone->value;
+            area = table_get_key(zone_value->extend, item.area);
             if(area)
             {
-                table_value *area_value = (table_value*)area->value;
-                uint8_t redirect = 0x01;
+                area_value = (table_value*)area->value;
+                redirect = 0x01;
                 buffer_append(record_buffer, &redirect, sizeof(redirect));
                 buffer_append(record_buffer, &area_value->offset, 3);
             }
             else
             {
-                table_node *node = table_set_key(zone_value->extend, item.area);
+                node = table_set_key(zone_value->extend, item.area);
                 make_table_value(node, offset);
 
-                uint8_t redirect = 0x02;
+                redirect = 0x02;
                 buffer_append(record_buffer, &redirect, sizeof(redirect));
                 buffer_append(record_buffer, &zone_value->offset, 3);
 
                 area = table_get_key(string_table, item.area);
-                uint32_t area_len = strlen(item.area) + 1;
+                area_len = strlen(item.area) + 1;
                 if(area_len>2 && area )
                 {
-                    table_value *area_value = (table_value*)area->value;
+                    area_value = (table_value*)area->value;
                     buffer_append(record_buffer, &redirect, sizeof(redirect));
                     buffer_append(record_buffer, &area_value->offset, 3);
                 }
@@ -300,22 +317,22 @@ bool qqwry_build(const ipdb *ctx, const char *file)
         else
         {
             zone = table_set_key(string_table, item.zone);
-            table_value *zone_value = make_table_value(zone, offset);
+            zone_value = make_table_value(zone, offset);
 
-            uint32_t zone_len = strlen(item.zone) + 1;
+            zone_len = strlen(item.zone) + 1;
             buffer_append(record_buffer, item.zone, zone_len);
 
-            table_node *node = table_set_key(zone_value->extend, item.area);
+            node = table_set_key(zone_value->extend, item.area);
             make_table_value(node, offset);
 
-            table_node *area = table_get_key(string_table, item.area);
+            area = table_get_key(string_table, item.area);
 
-            uint32_t area_len = strlen(item.area) + 1;
+            area_len = strlen(item.area) + 1;
             if(area_len>2 && area)
             {
-                table_value *area_value = (table_value*)area->value;
+                area_value = (table_value*)area->value;
 
-                uint8_t redirect = 0x02;
+                redirect = 0x02;
                 buffer_append(record_buffer, &redirect, sizeof(redirect));
                 buffer_append(record_buffer, &area_value->offset, 3);
             }
@@ -339,10 +356,10 @@ bool qqwry_build(const ipdb *ctx, const char *file)
     }
 
 
-    uint32_t idx_first = offset;
-    uint32_t idx_last = offset + buffer_size(index_buffer) - 7;
+    idx_first = offset;
+    idx_last = offset + buffer_size(index_buffer) - 7;
 
-    FILE * fp = fopen(file, "wb");
+    fp = fopen(file, "wb");
     if(fp)
     {
         fwrite(&idx_first, 1, sizeof(idx_first), fp);

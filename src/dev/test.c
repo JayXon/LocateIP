@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <stdlib.h>
 int calloc_times = 0;
 int free_times = 0;
 void* my_malloc(size_t len)
@@ -36,19 +36,19 @@ void my_free(void *ptr)
 //#include <windows.h>
 uint8_t* readfile(const char *path, uint32_t *length)
 {
+    uint8_t* buffer = 0;
     FILE *fp = fopen(path, "rb");
     if(fp)
     {
         fseek(fp, 0, SEEK_END);
         *length = ftell(fp);
-        uint8_t* buffer = (uint8_t*)malloc(*length);
+        buffer = (uint8_t*)malloc(*length);
 
         fseek(fp, 0, SEEK_SET);
         fread(buffer, *length, 1, fp);
         fclose(fp);
-        return buffer;
     }
-    return 0;
+    return buffer;
 }
 
 void test_read_qqwry()
@@ -115,8 +115,8 @@ void test_build_qqwry()
 
     if(buffer) free(buffer);
     ipdb_release(db);
-}
 
+}
 void test_build_patch()
 {
     uint32_t length1 = 0;
