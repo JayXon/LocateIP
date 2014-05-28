@@ -44,3 +44,43 @@ uint32_t str2ip(const char *lp)
 
     return ret;
 }
+
+
+buffer* buffer_create()
+{
+    return calloc(1, sizeof(buffer));
+}
+
+uint32_t buffer_expand(buffer *buf, uint32_t length)
+{
+    buf->size += length;
+    if(buf->size>buf->capacity)
+    {
+        buf->capacity = (buf->capacity + length)*3/2;
+        buf->data = (uint8_t*)realloc(buf->data, buf->capacity);
+    }
+    return buf->size - length;
+}
+
+uint32_t buffer_append(buffer *buf, const void* src, uint32_t length)
+{
+    uint32_t offset = buffer_expand(buf, length);
+    memcpy(buf->data + offset, src, length);
+    return offset;
+}
+
+uint8_t* buffer_get(const buffer *buf)
+{
+    return buf->data;
+}
+
+uint32_t buffer_size(const buffer *buf)
+{
+    return buf->size;
+}
+
+void buffer_release(buffer *buf)
+{
+    if(buf->data) free(buf->data);
+    free(buf);
+}
