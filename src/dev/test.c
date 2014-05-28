@@ -92,7 +92,7 @@ int main()
 {
     test_read_qqwry();
     test_read_mon17();
-    //test_build_qqwry();
+    test_build_qqwry();
     //getchar();
     return 0;
 }

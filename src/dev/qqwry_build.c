@@ -50,12 +50,13 @@ void buffer_release(buffer *buf)
 }
 
 // hash table
-typedef struct
+typedef struct table_node_t table_node;
+struct table_node_t
 {
     uint32_t        key;
-    uint32_t        next;
+    table_node*     next;
     uint32_t        value;
-} table_node;
+};
 
 typedef struct
 {
@@ -121,7 +122,7 @@ const table_key* get_key(table *t, const table_node* node)
     uint8_t* buf = buffer_get(t->str);
     return (const table_key*)&buf[node->key];
 }
-uint32_t get_next(const table_node* node)
+table_node* get_next(const table_node* node)
 {
     return node->next;
 }
@@ -165,8 +166,8 @@ table_node* table_find(table *t, const table_key* key)
     while (!is_empty_node(node))
     {
         if (is_same_key(get_key(t, node), key)) return node;
-        if (!get_next(node)) break;
-        node = t->head + get_next(node);
+        node = get_next(node);
+        if (!node) break;
     }
     return 0;
 }
@@ -189,14 +190,14 @@ table_node* table_insert(table *t, const table_node* data)
                 table_node* other = t->head + get_position(t, get_key(t, node));
                 if (other != node)
                 {
-                    while (get_next(other) != position) other = t->head + get_next(other);
-                    other->next = (next - t->head);
+                    while (get_next(other) != node) other = get_next(other);
+                    other->next = next;
                     set_node(next, node);
                 }
                 else
                 {
-                    while (get_next(other)) other = t->head + get_next(other);
-                    other->next = next - t->head;
+                    while (get_next(other)) other = get_next(other);
+                    other->next = next;
                     set_node(next, data);
                     return next;
                 }
@@ -210,7 +211,7 @@ table_node* table_insert(table *t, const table_node* data)
 table *table_create()
 {
     table *t = calloc(1, sizeof(table));
-    t->size = 1<<1;
+    t->size = 1;
     t->head = calloc(t->size, sizeof(table_node));
     t->idle = t->head + t->size;
     t->seed = (uint32_t)&t->head;
@@ -222,7 +223,7 @@ table *table_create()
 table_node* table_set_key(table *t, const char* name)
 {
     const table_key *key = make_table_key(name, strlen(name), t->seed);
-    table_node *node =  table_find(t, key);
+    table_node *node = table_find(t, key);
     if(!node) return table_insert(t, make_node(t, key));
     return node;
 }
@@ -240,15 +241,53 @@ void table_release(table *t)
     free(t);
 }
 
+void show_table_key(table *t)
+{
+    uint32_t i = 0;
+    for(;i<t->size;i++)
+    {
+        table_node* node = t->head + i;
+        if (!is_empty_node(node))
+        {
+            const table_key* key = get_key(t, node);
+            printf("%.*s\n", get_len(key), key->str);
+        }
+    }
+}
+
 //
+typedef struct
+{
+    uint32_t        offset;
+    table*          extend;
+} table_value;
+
+table_value* make_table_value(table_node *node, uint32_t offset)
+{
+    table_value *node_value = calloc(1, sizeof(table_value));
+    node_value->offset = offset;
+    node_value->extend = table_create();
+    node->value = (uint32_t)node_value;
+    return node_value;
+}
+void release_table_value(table *t)
+{
+    uint32_t i = 0;
+    for(;i<t->size;i++)
+    {
+        table_node* node = t->head + i;
+        if (!is_empty_node(node))
+        {
+            table_value *node_value = (table_value*)node->value;
+            release_table_value(node_value->extend);
+            table_release(node_value->extend);
+            free(node_value);
+        }
+    }
+}
+
 bool qqwry_build(const ipdb *ctx, const char *file)
 {
-    typedef struct
-    {
-        uint32_t        offset;
-        table*          extend;
-    } table_value;
-
     buffer *record_buffer = buffer_create();
     buffer *index_buffer = buffer_create();
     table *string_table = table_create();
@@ -259,7 +298,7 @@ bool qqwry_build(const ipdb *ctx, const char *file)
     ipdb_item item;
     while(ipdb_next(&iter, &item))
     {
-        buffer_append(record_buffer, &item.lower, sizeof(item.lower));
+        buffer_append(record_buffer, &item.upper, sizeof(item.upper));
 
         offset += 4;
 
@@ -278,10 +317,7 @@ bool qqwry_build(const ipdb *ctx, const char *file)
             else
             {
                 table_node *node = table_set_key(zone_value->extend, item.area);
-                table_value *node_value = calloc(1, sizeof(table_value));
-                node->value = (uint32_t)node_value;
-                node_value->offset = offset;
-                node_value->extend = table_create();
+                make_table_value(node, offset);
 
                 uint8_t redirect = 0x02;
                 buffer_append(record_buffer, &redirect, sizeof(redirect));
@@ -298,10 +334,7 @@ bool qqwry_build(const ipdb *ctx, const char *file)
                 else
                 {
                     area = table_set_key(string_table, item.area);
-                    table_value *area_value = calloc(1, sizeof(table_value));
-                    area->value = (uint32_t)area_value;
-                    area_value->offset = offset + 4;
-                    area_value->extend = table_create();
+                    make_table_value(area, offset + 4);
 
                     buffer_append(record_buffer, item.area, area_len);
                 }
@@ -310,11 +343,7 @@ bool qqwry_build(const ipdb *ctx, const char *file)
         else
         {
             zone = table_set_key(string_table, item.zone);
-            table_value *zone_value = calloc(1, sizeof(table_value));
-            zone->value = (uint32_t)zone_value;
-
-            zone_value->offset = offset;
-            zone_value->extend = table_create();
+            table_value *zone_value = make_table_value(zone, offset);
 
             uint32_t zone_len = strlen(item.zone) + 1;
             buffer_append(record_buffer, item.zone, zone_len);
@@ -339,10 +368,7 @@ bool qqwry_build(const ipdb *ctx, const char *file)
             else
             {
                 area = table_set_key(string_table, item.area);
-                table_value *area_value = calloc(1, sizeof(table_value));
-                area->value = (uint32_t)area_value;
-                area_value->offset = offset + zone_len;
-                area_value->extend = table_create();
+                make_table_value(area, offset + zone_len);
 
                 buffer_append(record_buffer, item.area, area_len);
             }
@@ -369,8 +395,22 @@ bool qqwry_build(const ipdb *ctx, const char *file)
         fclose(fp);
     }
 
+    release_table_value(string_table);
     table_release(string_table);
     buffer_release(index_buffer);
     buffer_release(record_buffer);
     return true;
+}
+
+void test_table()
+{
+    table *test = table_create();
+
+    table_set_key(test, "联通");
+    table_set_key(test, "电信");
+    table_set_key(test, "电信");
+    table_set_key(test, "安徽职业技术学院");
+
+    show_table_key(test);
+    table_release(test);
 }
