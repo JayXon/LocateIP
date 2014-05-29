@@ -28,7 +28,7 @@ bool ipdb_dump(const ipdb *ctx, const char *file)
 
             char *ip1_t = ip2str(ip1, sizeof(ip1), item.lower);
             char *ip2_t = ip2str(ip2, sizeof(ip2), item.upper);
-            fprintf(fp, "%-16s%-16s%s%s%s\r\n", ip1_t, ip2_t, item.zone, strlen(item.area)>0?" ":"", item.area);
+            fprintf(fp, "%-16s%-16s%s%s%s\r\n", ip1_t, ip2_t, item.zone, item.area[0]?" ":"", item.area);
         }
 
         //fprintf(fp, "\r\n\r\nIP数据库共有数据 ： %d 条\r\n", ctx->count);

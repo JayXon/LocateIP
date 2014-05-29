@@ -142,9 +142,28 @@ bool split_line(char *buf, char **lower, char **upper, char **zone, char **area)
 
 static bool txtdb_iter(const ipdb *ctx, ipdb_item *item, uint32_t index)
 {
+    static char buf[1024];
+    static uint32_t offset = 0;
     if(index<ctx->count)
     {
-        return true;
+        if(index==0) offset = 0;
+        uint32_t new_offset = readline(ctx->buffer + offset, ctx->length - offset, buf);
+        if(new_offset)
+        {
+            offset += new_offset;
+            char *lower, *upper, *zone, *area;
+            bool right = split_line(buf, &lower, &upper, &zone, &area);
+
+            if(right)
+            {
+                item->lower = str2ip(lower);
+                item->upper = str2ip(upper);
+                item->zone = zone;
+                item->area = area;
+
+                return true;
+            }
+        }
     }
     return false;
 }
