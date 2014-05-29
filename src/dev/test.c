@@ -30,6 +30,7 @@ void my_free(void *ptr)
 #include "util.c"
 #include "qqwry.c"
 #include "mon17.c"
+#include "txtdb.c"
 #include "qqwry_build.c"
 #include "patch.c"
 
@@ -105,6 +106,22 @@ void test_read_mon17()
     ipdb_release(db);
 }
 
+void test_read_txt()
+{
+    uint32_t length = 0;
+    uint8_t *buffer = readfile("1.txt", &length);
+    ipdb *db = ipdb_create(&txtdb_handle, buffer, length);
+    printf("%d %d\n", db->count, db->date);
+
+    if(db->count)
+    {
+        //ipdb_dump(db, "txtdb.txt");
+    }
+
+    if(buffer) free(buffer);
+    ipdb_release(db);
+}
+
 void test_build_qqwry()
 {
     uint32_t length = 0;
@@ -140,6 +157,7 @@ int main()
     //test_read_mon17();
     //test_build_qqwry();
     //test_build_patch();
+    //test_read_txt();
     printf("calloc_times:%d free_times:%d %d\n",calloc_times,free_times,calloc_times-free_times);
     return 0;
 }
