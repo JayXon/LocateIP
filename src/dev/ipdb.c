@@ -31,7 +31,7 @@ bool ipdb_dump(const ipdb *ctx, const char *file)
             fprintf(fp, "%-16s%-16s%s%s%s\r\n", ip1_t, ip2_t, item.zone, item.area[0]?" ":"", item.area);
         }
 
-        //fprintf(fp, "\r\n\r\nIP数据库共有数据 ： %d 条\r\n", ctx->count);
+        fprintf(fp, "\r\n\r\nIP数据库共有数据 ： %d 条\r\n", ctx->count);
         fclose(fp);
         return true;
     }

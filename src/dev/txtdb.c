@@ -108,14 +108,8 @@ bool split_line(char *buf, char **lower, char **upper, char **zone, char **area)
             if(isspace(*ptr))
             {
                 *ptr = 0;
+                *area = ptr + 1;
                 state = 7;
-            }
-            break;
-        case 7:
-            if(!isspace(*ptr))
-            {
-                *area = ptr;
-                state = 8;
             }
             break;
         }
@@ -127,42 +121,32 @@ bool split_line(char *buf, char **lower, char **upper, char **zone, char **area)
 
     if(state==6)
     {
-        state = 8;
-        *area = *zone;
-        *zone = "";
-    }
-    if(state==7)
-    {
-        state = 8;
+        state = 7;
+        *zone = *zone - 1;
         *area = "";
     }
-
-    return state==8;
+    return state==7;
 }
 
 static bool txtdb_iter(const ipdb *ctx, ipdb_item *item, uint32_t index)
 {
     static char buf[1024];
-    static uint32_t offset = 0;
-    if(index<ctx->count)
+    static uint32_t last_offset = 0;
+    if(index==0) last_offset = 0;
+
+    uint32_t offset = 0;
+    while((offset = readline(ctx->buffer + last_offset, ctx->length - last_offset, buf)))
     {
-        if(index==0) offset = 0;
-        uint32_t new_offset = readline(ctx->buffer + offset, ctx->length - offset, buf);
-        if(new_offset)
+        last_offset += offset;
+        char *lower, *upper, *zone, *area;
+        bool right = split_line(buf, &lower, &upper, &zone, &area);
+        if(right)
         {
-            offset += new_offset;
-            char *lower, *upper, *zone, *area;
-            bool right = split_line(buf, &lower, &upper, &zone, &area);
-
-            if(right)
-            {
-                item->lower = str2ip(lower);
-                item->upper = str2ip(upper);
-                item->zone = zone;
-                item->area = area;
-
-                return true;
-            }
+            item->lower = str2ip(lower);
+            item->upper = str2ip(upper);
+            item->zone = zone;
+            item->area = area;
+            return true;
         }
     }
     return false;
@@ -179,11 +163,11 @@ static bool txtdb_init(ipdb * ctx, const uint8_t *buffer, uint32_t length)
     ctx->length = length;
 
     char buf[1024];
-    uint32_t new_offset = 0;
+    uint32_t last_offset = 0;
     uint32_t offset = 0;
-    while(new_offset = readline(buffer + offset, length - offset, buf))
+    while((offset = readline(buffer + last_offset, length - last_offset, buf)))
     {
-        offset += new_offset;
+        last_offset += offset;
         char *lower, *upper, *zone, *area;
         bool right = split_line(buf, &lower, &upper, &zone, &area);
         if(right) ctx->count++;
